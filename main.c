@@ -14,8 +14,8 @@
 #define VASAK_MOOTOR 1
 #define PAREM_MOOTOR 2
 
-#define PARIPAEVA 1
-#define VASTUPAEVA -1
+#define EDASI -1
+#define TAGASI 1
 #define SEIS 0
 
 // Funktsioonide loetelu
@@ -37,9 +37,6 @@ pin pin_rc_in_4 = PIN(A, 3);
 pin pin_trigger = PIN(A, 1);
 pin pin_echo    = PIN(A, 2);
 
-// Nupp
-pin_setup_input(S1);
-
 
 int main(void) {
     int state = STATE_OTSI;
@@ -47,6 +44,8 @@ int main(void) {
     int speed = 60;
 
     unsigned short distance = 80000;
+
+    pin_setup_input(S1);
 
     // MOOTORITE SEADISTUS
     adc_init(ADC_REF_AVCC, ADC_PRESCALE_8);
@@ -62,6 +61,8 @@ int main(void) {
     unsigned short reading_2;
     unsigned short reading_3;
     unsigned short reading_4;
+    unsigned short reading_p_mean;
+    unsigned short reading_mean;
 
     // parast nuppu vajutamist oota 5 sek ja siis toimi
     while (!button_read(S1)) {
@@ -72,25 +73,25 @@ int main(void) {
     while(1) {
 
         if (state == STATE_OTSI) {
-            speed = 60;
-            dcmotor_drive_pwm(VASAK_MOOTOR, PARIPAEVA, speed);
-            dcmotor_drive_pwm(PAREM_MOOTOR, VASTUPAEVA, speed);
+            speed = 110;
+            dcmotor_drive_pwm(VASAK_MOOTOR, EDASI, speed);
+            dcmotor_drive_pwm(PAREM_MOOTOR, TAGASI, speed);
             while(true) {
                 distance = ultrasonic_measure_srf04(pin_trigger, pin_echo)/10;
-                if (distance != 0 && distance < 14) {
+                if (distance != 0 && distance < 6) {
                     dcmotor_drive_pwm(VASAK_MOOTOR, SEIS, speed);
                     dcmotor_drive_pwm(PAREM_MOOTOR, SEIS, speed);
                     state = STATE_GAZGAZ;
                     break;
                 }
-                hw_delay_ms(60);
+                hw_delay_ms(20);
             }
         }
 
         if (state == STATE_GAZGAZ) {
-            speed = 250;
-            dcmotor_drive_pwm(VASAK_MOOTOR, PARIPAEVA, speed);
-            dcmotor_drive_pwm(PAREM_MOOTOR, PARIPAEVA, speed);
+            speed = 200;
+            dcmotor_drive_pwm(VASAK_MOOTOR, EDASI, speed);
+            dcmotor_drive_pwm(PAREM_MOOTOR, EDASI, speed);
             while (true) {
                 hw_delay_ms(20);
                 reading_1_p = QTR_RC_measure(pin_rc_in_1_p);
@@ -102,21 +103,21 @@ int main(void) {
                 reading_3 = QTR_RC_measure(pin_rc_in_3);
                 reading_4 = QTR_RC_measure(pin_rc_in_4);
                 if (reading_1_p > 100 && reading_2_p > 100 && reading_3_p > 100 && reading_4_p > 100) {
-                    reading_p = (reading_1_p + reading_2_p + reading_3_p + reading_4_p)/4;
-                    if (reading_p > 1100) {
+                    reading_p_mean = (reading_1_p + reading_2_p + reading_3_p + reading_4_p)/4;
+                    if (reading_p_mean > 2000) {
                         state = STATE_OTSI;
-                        dcmotor_drive_pwm(VASAK_MOOTOR, VASTUPAEVA, speed);
-                        dcmotor_drive_pwm(PAREM_MOOTOR, VASTUPAEVA, speed);
+                        dcmotor_drive_pwm(VASAK_MOOTOR, TAGASI, speed);
+                        dcmotor_drive_pwm(PAREM_MOOTOR, TAGASI, speed);
                         hw_delay_ms(500);
                         break;
                     }
                 }
                 if (reading_1 > 100 && reading_2 > 100 && reading_3 > 100 && reading_4 > 100) {
-                    reading = (reading_1 + reading_2 + reading_3 + reading_4)/4;
-                    if (reading > 1100) {
+                    reading_mean = (reading_1 + reading_2 + reading_3 + reading_4)/4;
+                    if (reading_mean > 2000) {
                         state = STATE_OTSI;
-                        dcmotor_drive_pwm(VASAK_MOOTOR, VASTUPAEVA, speed);
-                        dcmotor_drive_pwm(PAREM_MOOTOR, VASTUPAEVA, speed);
+                        dcmotor_drive_pwm(VASAK_MOOTOR, TAGASI, speed);
+                        dcmotor_drive_pwm(PAREM_MOOTOR, TAGASI, speed);
                         hw_delay_ms(500);
                         break;
                     }
